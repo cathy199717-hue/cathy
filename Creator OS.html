@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#3b5167"><title>Creator OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Cormorant+Garamond:ital,wght@1,500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6efe6;--card:#fffaf3;--ink:#26323f;--mute:#7d8791;--navy:#3b5167;--sand:#e3d4c0;--line:#eadfce;--ok:#3f8a5c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171d24;--card:#222a33;--ink:#eee6da;--mute:#9aa4ad;--navy:#7f9bb5;--sand:#3a4450;--line:#313b46}}
+:root[data-theme="dark"]{--bg:#171d24;--card:#222a33;--ink:#eee6da;--mute:#9aa4ad;--navy:#7f9bb5;--sand:#3a4450;--line:#313b46}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 "Noto Sans TC",system-ui,sans-serif;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+main{flex:1;overflow-y:auto;padding:16px 16px 24px}
+h1{font-size:22px;font-weight:700;margin-bottom:12px}
+h2{font-size:15px;font-weight:700;margin:18px 0 8px}
+.script{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-size:26px;color:var(--navy)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.mute{color:var(--mute);font-size:13px}
+.bar{height:6px;border-radius:3px;background:var(--sand);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--navy);border-radius:3px}
+.task{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.task:last-child{border:0}
+.chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--navy);flex:none;display:grid;place-items:center;color:#fff;font-size:13px}
+.done .chk{background:var(--navy)}.done .tt{text-decoration:line-through;color:var(--mute)}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:12px;padding:11px 16px;font:inherit;font-weight:500;width:100%;cursor:pointer}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 14px;font:inherit;font-size:13px;white-space:nowrap;cursor:pointer}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+input,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
+.tag{font-size:12px;color:var(--ok);font-weight:700}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
+.stat b{display:block;font-size:20px}.up{color:var(--ok);font-size:12px}
+.msg{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;white-space:pre-line}
+.me{background:var(--navy);color:#fff;margin-left:48px}
+nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;background:none;border:0;color:var(--mute);font:inherit;font-size:12px;padding:6px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button span{font-size:20px}nav .on{color:var(--navy);font-weight:700}
+.ring{display:block;margin:6px auto}
+.item{display:flex;gap:12px}.th{width:56px;height:70px;border-radius:10px;background:linear-gradient(160deg,var(--sand),var(--navy));flex:none}
+.modal{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;justify-content:center;z-index:9}
+.sheet{background:var(--bg);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+.wel{position:fixed;inset:0;z-index:8;background:linear-gradient(#3b5167cc,#26323f);color:#fff;display:flex;flex-direction:column;justify-content:center;padding:32px;gap:14px;text-align:center}
+.wel .script{color:#fff;font-size:44px}
+.set{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}
+</style></head><body>
+<main id="v"></main>
+<nav id="nav"></nav>
+<script>
+const TABS=[["home","首頁","⌂"],["plan","計畫","▤"],["content","內容","✎"],["data","數據","▥"],["ai","AI","✦"]];
+let tab="home",filter="全部",chat=[];
+const S={tasks:[],goals:[],items:[],logs:[]};
+try{const s=JSON.parse(localStorage.getItem("cos2")||"null");if(s){S.tasks=s.tasks||S.tasks;S.items=s.items||S.items}}catch(e){}
+S.goal={n:"",v:0,due:""};S.name="";S.brand=["","","","","",""];S.phase=["",""];S.weekly=[];S.days=[];S.adj=[];S.last="";S.hist=[];S.seen=0;
+try{const s=JSON.parse(localStorage.getItem("cos2")||"null");if(s){["goal","name","seen","goals","logs","brand","phase","weekly","days","adj","last","hist"].forEach(k=>{if(s[k]!=null)S[k]=s[k]})}}catch(e){}
+let DB=null,SAM=null;
+const snap=()=>({tasks:S.tasks,items:S.items,goals:S.goals,logs:S.logs,brand:S.brand,phase:S.phase,weekly:S.weekly,days:S.days,adj:S.adj,last:S.last,hist:S.hist,goal:S.goal,name:S.name,seen:S.seen});
+const save=()=>{try{localStorage.setItem("cos2",JSON.stringify(snap()))}catch(e){}if(DB)DB.set({j:JSON.stringify(snap())}).catch(()=>{})};
+(async()=>{try{const u=await claude.use("user"),d=await claude.use("db"),m=await claude.use("sample");SAM=m;if(u&&d){const id=await u.id();DB=d.collection("data/users/"+id).doc("cos2");const x=await DB.get();if(x.exists){Object.assign(S,JSON.parse(x.data().j));draw()}else save()}}catch(e){}})();
+const pct=(a,b)=>b?Math.min(100,Math.round(a/b*100)):0;const cur=()=>S.logs.length?S.logs[S.logs.length-1].f:0;
+const bar=p=>`<div class="bar"><i style="width:${p}%"></i></div>`;
+function tasks(){return !S.tasks.length?'<p class="mute" style="padding:6px 0">還沒有任務，點下方新增。</p>':S.tasks.map((x,i)=>`<div class="task ${x.d?"done":""}" onclick="tog(${i})"><span class="chk">${x.d?"✓":""}</span><span class="tt" style="flex:1">${x.r?"↻ ":""}${x.t}</span><span class="mute" onclick="event.stopPropagation();S.tasks.splice(${i},1);save();draw()">✕</span></div>`).join("")}
+const td=()=>new Date().toISOString().slice(0,10);const streak=()=>{let n=0,d=new Date();if(!S.days.includes(td()))d.setDate(d.getDate()-1);while(S.days.includes(d.toISOString().slice(0,10))){n++;d.setDate(d.getDate()-1)}return n};
+function tog(i){S.tasks[i].d^=1;if(S.tasks[i].d&&!S.days.includes(td()))S.days.push(td());save();draw()}
+function addTask(){const e=document.getElementById("nt");if(e.value.trim()){S.tasks.push({t:e.value.trim(),d:0});save();draw()}}
+function addItem(){const e=document.getElementById("ni");if(e.value.trim()){S.items.unshift([e.value.trim(),document.getElementById("nk").value,"新靈感","—"]);save();draw()}}
+const V={
+home(){const d=S.tasks.filter(x=>x.d).length,n=S.tasks.length,p=pct(d,n),C=2*Math.PI*52;
+return `<div class="row"><b style="font-size:20px">${new Date().toLocaleDateString("zh-TW",{month:"long",day:"numeric",weekday:"short"})}</b><button class="chip" onclick="tab='set';draw()">⚙ 設定</button></div>
+<div class="card" style="margin-top:12px"><svg class="ring" width="150" height="150" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--sand)" stroke-width="9"/><circle cx="60" cy="60" r="52" fill="none" stroke="var(--navy)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C*p/100} ${C}" transform="rotate(-90 60 60)"/><text x="60" y="62" text-anchor="middle" font-size="26" font-weight="700" fill="var(--ink)">${p}%</text><text x="60" y="80" text-anchor="middle" font-size="9" fill="var(--mute)">今日完成度 ${d}/${n}</text></svg><p class="mute" style="text-align:center">🔥 連續經營 ${streak()} 天</p></div>
+<h2>今天最重要的事</h2><div class="card">${tasks()}</div><button class="btn" onclick="taskM()">+ 新增任務</button>`},
+plan(){return `<h1>計畫</h1><div class="card"><b>長期目標</b><div style="font-size:17px;margin:4px 0">${S.goal.n||"尚未設定目標"}</div><div class="row mute"><span>目前 ${cur()} → ${S.goal.v||"—"} ${S.goal.due}</span><span>${pct(cur(),S.goal.v)}%</span></div>${bar(pct(cur(),S.goal.v))}<button class="chip" style="margin-top:10px" onclick="goalM()">設定目標</button></div>
+<h2>目前階段</h2><div class="card">${S.phase[0]?`<b>${S.phase[0]}</b><div class="mute">預計 ${S.phase[1]}</div>`:'<p class="mute">還沒有階段。</p>'}<button class="chip" style="margin-top:8px" onclick="phaseM()">設定階段</button></div>
+<h2>本月目標</h2><div class="card">${S.goals.length?S.goals.map((g,i)=>`<div style="margin-bottom:10px" onclick="gp(${i})"><div class="row"><span>${g[0]}</span><span class="mute">${g[1]} / ${g[2]} ＋</span></div>${bar(pct(g[1],g[2]))}</div>`).join(""):'<p class="mute">還沒有本月目標。</p>'}<button class="chip" onclick="goalsM()">+ 新增項目</button></div>
+<h2>本週目標</h2><div class="card">${S.weekly.length?S.weekly.map((g,i)=>`<div style="margin-bottom:10px" onclick="wp(${i})"><div class="row"><span>${g[0]}</span><span class="mute">${g[1]} / ${g[2]} ＋</span></div>${bar(pct(g[1],g[2]))}</div>`).join(""):'<p class="mute">還沒有本週目標。</p>'}<button class="chip" onclick="weeklyM()">+ 新增項目</button></div>
+<h2>今日任務</h2><div class="card">${tasks()}<button class="btn" style="margin-top:10px" onclick="taskM()">+ 新增任務</button></div>`},
+content(){const f=S.items.filter(i=>filter=="全部"||i[1]==filter);
+return `<h1>內容</h1><div class="chips">${["全部","Reels","Threads","限動"].map(c=>`<button class="chip ${c==filter?"on":""}" onclick="filter='${c}';draw()">${c}</button>`).join("")}</div>
+${f.length?"":'<p class="mute">還沒有內容，點下方新增。</p>'}${f.map(i=>`<div class="card item"><div class="th"></div><div><div style="font-weight:500">${i[0]}</div><div class="mute">${i[1]} | ${i[2]}</div>${i[5]?`<div class="mute">Hook：${i[5]}</div>`:""}<div class="mute">觀看 ${i[8]?i[8].v:"—"} <span class="tag" style="cursor:pointer" onclick="adv(${S.items.indexOf(i)})">${ST[i[4]||0]} ›</span> <span class="tag" style="cursor:pointer;color:var(--navy)" onclick="perfM(${S.items.indexOf(i)})">記錄成效</span></div></div></div>`).join("")}
+<button class="btn" onclick="itemM()">+ 新增內容</button>`},
+set(){return `<div class="row"><h1>個人設定</h1><button class="chip" onclick="tab='home';draw()">返回</button></div><div class="card"><div class="set"><span>帳號同步</span><span class="mute">${DB?"已同步 ✓":"未登入（僅存本機）"}</span></div><div class="set"><span>品牌設定</span><b onclick="brandM()">${S.brand[1]?"編輯":"填寫"}</b></div><div class="set"><span>備份（JSON）</span><b onclick="exp()">匯出</b></div><div class="set"><span>還原備份</span><b onclick="document.getElementById('imp').click()">匯入</b></div><input id="imp" type="file" accept=".json" hidden onchange="imp(this)"><div class="set"><span>目標管理</span><b onclick="goalM()">編輯</b></div></div>
+<h2>安裝成手機 App</h2><div class="card mute">iPhone：Safari → 分享 → 加入主畫面<br>Android：Chrome → ⋮ → 加到主畫面<br>之後會像 App 一樣全螢幕開啟。</div>`},
+data(){const L=S.logs,l=L[L.length-1],q=L[L.length-2];
+if(!l)return `<h1>數據</h1><div class="card mute">還沒有數據。記錄粉絲數、觀看數與互動率後，就會看到成長曲線。</div>${pf()}<button class="btn" onclick="logM()">+ 記錄數據</button>`;
+const f=L.map(x=>x.f),mn=Math.min(...f),mx=Math.max(...f),W=300,H=110,P=f.map((v,i)=>[f.length>1?i*W/(f.length-1):W/2,H-(v-mn)/((mx-mn)||1)*H+4]),dl=q?l.f-q.f:0;
+return `<h1>數據</h1><div class="grid3"><div class="stat"><span class="mute">粉絲</span><b>${l.f}</b><span class="up">${q?(dl>=0?"↑ +":"↓ ")+dl:""}</span></div><div class="stat"><span class="mute">總觀看</span><b>${l.v}</b></div><div class="stat"><span class="mute">互動率</span><b>${l.e}%</b></div></div>
+<h2>粉絲成長趨勢</h2><div class="card"><svg viewBox="0 0 ${W} ${H+8}" width="100%"><polyline points="${P.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--navy)" stroke-width="2.5"/>${P.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--navy)"/>`).join("")}</svg><div class="row mute"><span>${L[0].d}</span><span>${l.d}</span></div></div>${pf()}<button class="btn" onclick="logM()">+ 記錄數據</button>`},
+ai(){return `<h1>AI 助理</h1><div class="msg">先在計畫頁填入目標和任務，我就能根據你的資料給建議。也可以直接問我任何經營問題。</div>
+<div class="chips">${["今日督導","週覆盤","我最近為什麼沒成長","我今天很累"].map(c=>`<button class="chip" onclick="ask('${c}')">${c}</button>`).join("")}</div>
+${chat.map(m=>`<div class="msg ${m[0]?"me":""}">${m[1]}</div>`).join("")}
+<div class="row"><input id="q" placeholder="輸入你的問題…" onkeydown="if(event.key=='Enter')ask()"><button class="btn" style="width:70px" onclick="ask()">送出</button></div><h2>AI 調整紀錄</h2>${S.adj.length?S.adj.slice(-5).reverse().map(a=>`<div class="msg mute">${a[0]}｜${a[1]}</div>`).join(""):'<p class="mute">AI 給的建議會記錄在這裡，歷史不會被修改。</p>'}`}};
+const R={};
+function M(title,fs,ok){const d=document.createElement("div");d.className="modal";d.innerHTML=`<div class="sheet"><b>${title}</b>${fs.map((f,i)=>`<label>${f[0]}</label>${f[1]?`<select>${f[1].map(o=>`<option>${o}</option>`).join("")}</select>`:`<input type="${f[2]||"text"}" value="${f[3]||""}" placeholder="${f[4]||""}">`}`).join("")}<button class="btn" style="margin-top:16px">儲存</button><button class="chip" style="margin-top:8px;width:100%">取消</button></div>`;
+d.onclick=e=>{if(e.target==d||e.target.className=="chip")d.remove()};d.querySelector(".btn").onclick=()=>{const v=[...d.querySelectorAll("input,select")].map(x=>x.value.trim());if(!v[0])return;ok(v);d.remove();save();draw()};document.body.append(d)}
+const taskM=()=>M("新增任務",[["任務名稱",0,0,"","例：完成 Reels 腳本"],["類型",["內容","目標","其他"]],["重複",["不重複","每天重複"]],["截止日期",0,"date"],["備註",0,0,"","例：約 60 秒・感情故事"]],v=>S.tasks.push({t:v[0],d:0,r:v[2]=="每天重複"?1:0}));
+const ST=["Idea","Planned","Drafting","Ready","Published","Analyzing"];const adv=i=>{S.items[i][4]=((S.items[i][4]||0)+1)%6;save();draw()};
+const itemM=()=>M("新增內容",[["標題",0,0,"","例：30歲後才發現…"],["平台",["Reels","Threads","限動","貼文"]],["分類",["感情故事","戀愛觀","12星座","自我成長","個人品牌","商品"]],["Hook",0,0,"","例：愛情不是唯一的解答"],["CTA",0,0,"","例：留言告訴我你的想法"],["預計發布日",0,"date"]],v=>S.items.unshift([v[0],v[1],v[2],"—",0,v[3],v[4],v[5]]));
+const goalM=()=>M("目標設定",[["目標名稱",0,0,S.goal.n,"例：2026 IG 粉絲破 1,000"],["目標值",0,"number",S.goal.v||"","例：1000"],["截止日期",0,"date",S.goal.due]],v=>S.goal={n:v[0],v:+v[1]||1000,due:v[2]});
+const nameM=()=>M("你的名稱",[["名稱",0,0,S.name,"例：Cathy"]],v=>S.name=v[0]);
+const brandM=()=>M("品牌設定",[["品牌名稱",0,0,S.brand[0],"例：Cathy"],["定位",0,0,S.brand[1],"例：給 25–35 歲女生的情感成長日記"],["目標受眾",0,0,S.brand[2],"例：想經營自己的上班族女生"],["核心價值",0,0,S.brand[3],"例：溫柔而有力量"],["內容支柱",0,0,S.brand[4],"例：感情故事、戀愛觀、12星座"],["品牌語氣",0,0,S.brand[5],"例：溫柔、專業、有力量"]],v=>S.brand=v);
+async function ask(t){const e=document.getElementById("q");t=t||(e&&e.value.trim());if(!t)return;chat.push([1,t]);
+if(SAM){chat.push([0,"思考中…"]);draw();try{const h=chat.slice(0,-1).slice(-7).map(m=>({role:m[0]?"user":"assistant",content:m[1]}));const r=await SAM("你是自媒體經營 AI 助理，自媒體經營助理，用繁體中文、簡短具體地回答。依據使用者資料（品牌、目標、任務、內容、數據）回答；不修改歷史紀錄，只調整未來；使用者很累時降低門檻，只列最低必要任務；資料不足時請他先填寫。使用者資料："+JSON.stringify(snap())+"\\n"+h.map(m=>m.role+": "+m.content).join("\\n"),{cache:false});chat[chat.length-1]=[0,r.text];S.adj.push([td(),r.text.slice(0,120)]);save()}catch(x){chat[chat.length-1]=[0,R[t]||"AI 暫時無法使用，請稍後再試。"]}draw();return}
+chat.push([0,R[t]||"目前未連上 AI，請稍後再試。"]);draw()}
+const exp=async()=>{try{const d=await claude.use("downloads");if(d)await d.save({filename:"creator-os-backup.json",data:JSON.stringify(snap())})}catch(e){}};
+const imp=i=>{const f=i.files[0];if(!f)return;f.text().then(t=>{try{Object.assign(S,JSON.parse(t));save();draw()}catch(e){}})};
+const wp=i=>{S.weekly[i][1]++;save();draw()};
+const phaseM=()=>M("目前階段",[["階段名稱",0,0,S.phase[0],"例：425 → 1,000 粉"],["預計完成日",0,"date",S.phase[1]]],v=>S.phase=v);
+const weeklyM=()=>M("新增本週項目",[["項目名稱",0,0,"","例：Reels"],["目標數量",0,"number","","例：4"]],v=>S.weekly.push([v[0],0,+v[1]||1]));
+const perfM=i=>M("記錄成效",[["觀看",0,"number","","例：12400"],["分享",0,"number","","例：320"],["收藏",0,"number","","例：80"],["留言",0,"number","","例：25"],["新增粉絲",0,"number","","例：48"]],v=>S.items[i][8]={v:+v[0]||0,s:+v[1]||0,c:+v[2]||0,m:+v[3]||0,f:+v[4]||0});
+const hc=()=>{const h=S.hist.slice(-14);return `<h2>每日完成率</h2><div class="card">${h.length?`<svg viewBox="0 0 300 80" width="100%">${h.map((x,i)=>{const p=pct(x[1],x[2]),w=300/h.length;return `<rect x="${i*w+3}" y="${70-p*.6}" width="${w-6}" height="${p*.6+2}" rx="3" fill="var(--navy)"/>`}).join("")}</svg><div class="row mute"><span>${h[0][0]}</span><span>平均 ${Math.round(h.reduce((a,x)=>a+pct(x[1],x[2]),0)/h.length)}%</span><span>${h[h.length-1][0]}</span></div>`:'<p class="mute">從明天起，每天的完成率會顯示在這裡。</p>'}</div>`};
+const pf=()=>{const w=S.items.filter(i=>i[8]).sort((a,b)=>b[8].v-a[8].v);return `${hc()}<h2>內容成效</h2><div class="card" style="overflow-x:auto">${w.length?`<table style="width:100%;font-size:13px;border-collapse:collapse"><tr class="mute"><td>內容</td><td>類型</td><td>觀看</td><td>分享</td><td>新增粉</td></tr>${w.map(i=>`<tr><td>${i[0]}</td><td>${i[2]}</td><td>${i[8].v}</td><td>${i[8].s}</td><td>+${i[8].f}</td></tr>`).join("")}</table>`:'<p class="mute">在「內容」頁按「記錄成效」，填入每支內容的數據。</p>'}</div>`};
+const gp=i=>{S.goals[i][1]++;save();draw()};
+const goalsM=()=>M("新增本月項目",[["項目名稱",0,0,"","例：Reels"],["目標數量",0,"number","","例：15"]],v=>S.goals.push([v[0],0,+v[1]||1]));
+const logM=()=>M("記錄數據",[["日期",0,"date",new Date().toISOString().slice(0,10)],["IG 粉絲數",0,"number","","例：425"],["總觀看數",0,"number","","例：12400"],["互動率 %",0,"number","","例：9.8"]],v=>{S.logs.push({d:v[0],f:+v[1]||0,v:+v[2]||0,e:+v[3]||0});S.logs.sort((a,b)=>a.d>b.d?1:-1)});
+function _old(t){const e=document.getElementById("q");t=t||(e&&e.value.trim());if(!t)return;chat.push([1,t],[0,R[t]||"收到！這是示範版，正式版會串接 AI 回覆你。"]);draw()}
+function roll(){const t=td();if(S.last===t)return;if(S.last){S.hist.push([S.last,S.tasks.filter(x=>x.d).length,S.tasks.length]);S.hist=S.hist.slice(-30);S.tasks=S.tasks.filter(x=>!(x.d&&!x.r));S.tasks.forEach(x=>{if(x.r)x.d=0})}S.last=t;save()}
+function draw(){roll();document.getElementById("v").innerHTML=V[tab]();
+document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="${t[0]==tab?"on":""}" onclick="tab='${t[0]}';draw();document.getElementById('v').scrollTop=0"><span>${t[2]}</span>${t[1]}</button>`).join("")}
+function wel(){if(S.seen)return;const w=document.createElement("div");w.className="wel";w.innerHTML='<div class="script">&nbsp;</div><div>歡迎！<br><span style="opacity:.7">一起把喜歡的事，變成長久的事 ♡</span></div><button class="btn" style="background:#e3d4c0;color:#26323f">開始使用</button>';w.querySelector("button").onclick=()=>{S.seen=1;save();w.remove()};document.body.append(w)}
+draw();wel();
+</script></body></html>
